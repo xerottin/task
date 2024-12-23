@@ -86,3 +86,20 @@ async def get_chat_messages(
         )
     ).order_by(Message.created_at.desc()).all()
     return messages 
+
+@router.get("/stats", response_model=dict)
+async def get_message_stats(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Получение статистики сообщений пользователя
+    """
+    total_messages = db.query(Message).filter(
+        (Message.sender_id == current_user.id) | 
+        (Message.recipient_id == current_user.id)
+    ).count()
+    
+    return {
+        "total_messages": total_messages
+    }

@@ -15,11 +15,10 @@ from ..deps import get_current_active_user
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserSchema)
-def register(user_in: UserCreate, db: Session = Depends(get_db)) -> Any:
+async def register(user_in: UserCreate, db: Session = Depends(get_db)):
     """
     Регистрация нового пользователя.
     """
-    # Добавим отладочный вывод
     print(f"Attempting to register user: {user_in.username}")
     
     # Проверяем, существует ли пользователь с таким email
@@ -47,6 +46,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)) -> Any:
         hashed_password=get_password_hash(user_in.password),
         is_active=True
     )
+    
     try:
         db.add(db_user)
         db.commit()
@@ -69,13 +69,12 @@ async def login(
     """
     OAuth2 совместимый токен для логина JWT
     """
-    # Добавим отладочный вывод
-    print(f"Attempting login for user: {form_data.username}")
+    print(f"Login attempt for user: {form_data.username}")
     
     # Пытаемся найти пользователя по username
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user:
-        print(f"User {form_data.username} not found")
+        print(f"User not found: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -104,12 +103,12 @@ async def login(
         "token_type": "bearer"
     }
 
-@router.post("/test-token", response_model=UserSchema)
-def test_token(current_user: User = Depends(get_current_active_user)) -> Any:
+@router.get("/test-token", response_model=UserSchema)
+async def test_token(current_user: User = Depends(get_current_active_user)) -> Any:
     """
     Тестовый эндпоинт для проверки токена
     """
-    return current_user 
+    return current_user
 
 @router.get("/users", tags=["debug"])
 def get_all_users(db: Session = Depends(get_db)):

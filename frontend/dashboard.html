@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет</title>
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <header>
+            <h1>Личный кабинет</h1>
+            <button id="logoutBtn" class="btn">Выйти</button>
+        </header>
+        
+        <main>
+            <div class="user-info">
+                <h2>Информация о пользователе</h2>
+                <p>Имя пользователя: <span id="username">Загрузка...</span></p>
+                <p>Telegram ID: <span id="telegramId">Не привязан</span></p>
+                <p>Отправлено сообщений: <span id="messageCount">0</span></p>
+            </div>
+            
+            <div class="telegram-connect" id="telegramConnectBlock">
+                <h3>Подключить Telegram</h3>
+                <p>Для подключения Telegram, отправьте боту команду /start и введите полученный код:</p>
+                <div class="form-group">
+                    <input type="text" id="telegramCode" placeholder="Введите код">
+                    <button id="connectTelegramBtn" class="btn">Подключить</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="static/js/dashboard.js"></script>
+</body>
+</html> 

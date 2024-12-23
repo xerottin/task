@@ -25,10 +25,8 @@ app = FastAPI(
 
 # Настройка CORS
 origins = [
-    "http://localhost:8080",
-    "http://127.0.0.1:8080",
-    "http://0.0.0.0:8080",
-    "http://localhost:5001",
+    "https://task-81ecf.web.app",  # URL вашего Firebase хостинга
+    "https://task-81ecf.firebaseapp.com"  # Альтернативный URL Firebase
 ]
 
 app.add_middleware(

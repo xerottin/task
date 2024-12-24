@@ -1,24 +1,36 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from dotenv import load_dotenv
 import os
-from pathlib import Path
+import time
 
-# Получаем абсолютный путь к .env файлу
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-env_path = BASE_DIR / '.env'
-
-print(f"Looking for .env file at: {env_path}")
-load_dotenv(env_path)
+load_dotenv()
 
 class Settings(BaseModel):
-    DATABASE_URL: str = os.getenv("DATABASE_URL")
-    SECRET_KEY: str = os.getenv("SECRET_KEY")
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN")
-    
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        print(f"Loaded TELEGRAM_BOT_TOKEN: {self.TELEGRAM_BOT_TOKEN}")
+    DATABASE_URL: str | None = None
+    SECRET_KEY: str
+    TELEGRAM_BOT_TOKEN: str
 
-settings = Settings() 
+    @validator('DATABASE_URL')
+    def validate_database_url(cls, v):
+        # Ждем установки DATABASE_URL максимум 30 секунд
+        timeout = 30
+        while not v and timeout > 0:
+            print(f"Waiting for DATABASE_URL... {timeout}s remaining")
+            v = os.getenv('DATABASE_URL')
+            if v:
+                break
+            time.sleep(1)
+            timeout -= 1
+            
+        if not v:
+            raise ValueError("DATABASE_URL must be set")
+            
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql://", 1)
+        return v
+
+settings = Settings(
+    DATABASE_URL=os.getenv('DATABASE_URL'),
+    SECRET_KEY=os.getenv('SECRET_KEY', 'your-secret-key'),
+    TELEGRAM_BOT_TOKEN=os.getenv('TELEGRAM_BOT_TOKEN')
+) 

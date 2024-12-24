@@ -30,7 +30,8 @@ origins = [
     "http://0.0.0.0:8080",
     "http://localhost:5001",
     "https://task-81ecf.web.app",
-    "https://task-81ecf.firebaseapp.com"
+    "https://task-81ecf.firebaseapp.com",
+    "https://reasonable-empathy-production.up.railway.app"
 ]
 
 app.add_middleware(

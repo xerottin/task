@@ -1,49 +1,58 @@
 from aiogram import Bot, Dispatcher
-from aiogram.enums import ParseMode
+from aiogram.filters import Command
 from ..config import settings
-from . import handlers
+import random
+import string
+import asyncio
 
-async def check_token(token: str) -> bool:
-    """Проверка валидности токена"""
+# Создаем экземпляр бота
+bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+dp = Dispatcher()
+
+# Глобальная переменная для хранения кодов подключения
+connection_codes = {}
+
+@dp.message(Command("start"))
+async def cmd_start(message):
+    """
+    Обработчик команды /start
+    """
     try:
-        test_bot = Bot(token=token)
-        me = await test_bot.get_me()
-        print(f"Бот успешно авторизован как: {me.username}")
-        await test_bot.session.close()
-        return True
+        # Генерируем уникальный код для подключения
+        code = ''.join(random.choices(string.digits, k=6))
+        connection_codes[code] = message.from_user.id
+        
+        print(f"Generated code {code} for Telegram ID {message.from_user.id}")
+        
+        await message.answer(
+            f"Ваш код для подключения: {code}\n\n"
+            "Введите этот код на сайте для привязки Telegram аккаунта."
+        )
     except Exception as e:
-        print(f"Ошибка проверки токена: {e}")
-        return False
-
-# Инициализация бота и диспетчера
-bot = None  # Инициализируем позже
-
-# Временно для отладки
-TELEGRAM_TOKEN = "7503574488:AAHd3Jm7UP0iRjnxIrYxE8xOkF_B7R5WjZQ"
+        print(f"Error in start command: {e}")
 
 async def start_bot():
     """
-    Запуск бота
+    Функция запуска бота
     """
-    global bot
-    token = TELEGRAM_TOKEN
-    print(f"Starting bot with token: {token}")
-    
-    if not await check_token(token):
-        print("Неверный токен бота! Проверьте TELEGRAM_BOT_TOKEN в .env файле")
-        return
-
     try:
-        bot = Bot(token=token)
-        dp = Dispatcher()
-        dp.include_router(handlers.router)
-        
-        print("Bot successfully initialized!")
-        print(f"Bot info: @{(await bot.get_me()).username}")
-        
-        await bot.delete_webhook(drop_pending_updates=True)
-        print("Starting polling...")
-        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
-    finally:
-        if bot and bot.session and not bot.session.closed:
-            await bot.session.close() 
+        print("Starting bot...")
+        print(f"Bot token: {settings.TELEGRAM_BOT_TOKEN[:5]}...")  # Показываем только начало токена
+        await dp.start_polling(bot, skip_updates=True)
+    except Exception as e:
+        print(f"Error starting bot: {e}")
+        if not bot.session.closed:
+            await bot.session.close()
+
+async def stop_bot():
+    """
+    Функция остановки бота
+    """
+    try:
+        if not bot.session.closed:
+            await bot.session.close()
+    except Exception as e:
+        print(f"Error stopping bot: {e}")
+
+# Экспортируем бота для использования в других модулях
+__all__ = ['bot', 'dp', 'connection_codes', 'start_bot', 'stop_bot'] 

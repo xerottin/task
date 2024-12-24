@@ -1,4 +1,4 @@
-const API_URL = 'https://your-railway-app-url.railway.app';
+const API_URL = 'http://localhost:5001';
 
 console.log('main.js loaded');
 

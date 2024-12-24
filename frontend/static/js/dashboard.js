@@ -1,4 +1,4 @@
-const API_URL = 'https://your-railway-app-url.railway.app';
+const API_URL = 'http://localhost:5001';
 
 // Проверка авторизации
 function checkAuth() {
@@ -101,11 +101,12 @@ document.getElementById('connectTelegramBtn').addEventListener('click', async ()
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ code })
+            body: JSON.stringify({ code: code })
         });
 
         if (!response.ok) {
-            throw new Error('Ошибка подключения Telegram');
+            const error = await response.json();
+            throw new Error(error.detail || 'Ошибка подключения Telegram');
         }
 
         const result = await response.json();
@@ -113,7 +114,78 @@ document.getElementById('connectTelegramBtn').addEventListener('click', async ()
         location.reload();
     } catch (error) {
         console.error('Error:', error);
-        alert('Ошибка при подключении Telegram');
+        alert(error.message || 'Ошибка при подключении Telegram');
+    }
+});
+
+// Загрузка списка пользователей
+async function loadUsers() {
+    const token = checkAuth();
+    if (!token) return;
+
+    try {
+        console.log('Loading users...');
+        const response = await fetch(`${API_URL}/messages/users`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Ошибка загрузки пользователей');
+        }
+
+        const users = await response.json();
+        console.log('Loaded users:', users);
+        
+        const select = document.getElementById('recipientSelect');
+        select.innerHTML = '<option value="">Выберите получателя...</option>';
+        users.forEach(user => {
+            console.log('Adding user to select:', user);
+            select.innerHTML += `<option value="${user.id}">${user.username}</option>`;
+        });
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+}
+
+// Обновим обработчик отправки сообщения
+document.getElementById('sendBotMessageBtn').addEventListener('click', async () => {
+    const token = checkAuth();
+    if (!token) return;
+
+    const recipientId = document.getElementById('recipientSelect').value;
+    if (!recipientId) {
+        alert('Выберите получателя');
+        return;
+    }
+
+    const messageText = document.getElementById('botMessageInput').value.trim();
+    if (!messageText) {
+        alert('Введите текст сообщения');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/messages/send-bot-message?message=${encodeURIComponent(messageText)}&recipient_id=${recipientId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Ошибка отправки сообщения');
+        }
+
+        alert('Сообщение успешно отправлено!');
+        document.getElementById('botMessageInput').value = '';
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message || 'Ошибка при отправке сообщения');
     }
 });
 
@@ -122,4 +194,5 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Dashboard loaded');
     getUserInfo();
     getMessageStats();
+    loadUsers();
 }); 

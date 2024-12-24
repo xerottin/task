@@ -219,4 +219,39 @@ header {
 
 #connectTelegramBtn {
     width: auto;
+}
+
+.bot-message-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.bot-message-section textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    resize: vertical;
+}
+
+.bot-message-section button {
+    width: 100%;
+}
+
+.bot-message-section select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    background-color: white;
+}
+
+.bot-message-section label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
 } 

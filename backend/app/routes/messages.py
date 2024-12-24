@@ -103,3 +103,81 @@ async def get_message_stats(
     return {
         "total_messages": total_messages
     }
+
+@router.post("/send-bot-message")
+async def send_bot_message(
+    message: str,
+    recipient_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Отправка сообщения от имени бота конкретному пользователю
+    """
+    try:
+        print(f"Attempting to send message to recipient {recipient_id}")
+        # Находим получателя
+        recipient = db.query(User).filter(User.id == recipient_id).first()
+        if not recipient:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Получатель не найден"
+            )
+            
+        print(f"Recipient found: {recipient.username}, telegram_id: {recipient.telegram_id}")
+        if not recipient.telegram_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="У получателя не подключен Telegram"
+            )
+            
+        # Отправляем сообщение через бота
+        print("Sending message via bot...")
+        await bot.send_message(
+            chat_id=recipient.telegram_id,
+            text=f"🤖 Сообщение от {current_user.username}:\n\n{message}"
+        )
+        print("Message sent successfully")
+        
+        # Сохраняем сообщение в базе данных
+        db_message = Message(
+            content=message,
+            sender_id=current_user.id,
+            recipient_id=recipient_id
+        )
+        db.add(db_message)
+        db.commit()
+        
+        return {"status": "success", "message": "Сообщение отправлено"}
+    except Exception as e:
+        print(f"Error sending message: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/users", response_model=List[dict])
+async def get_users_for_messages(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Получение списка пользователей для отправки сообщений
+    """
+    try:
+        print("Getting users for messages...")
+        # Получаем только пользователей с подключенным Telegram
+        users = db.query(User).filter(
+            User.id != current_user.id,  # Исключаем текущего пользователя
+            User.telegram_id.isnot(None)  # Только с подключенным Telegram
+        ).all()
+        
+        result = [{"id": user.id, "username": user.username} for user in users]
+        print(f"Found {len(result)} users:", result)
+        return result
+    except Exception as e:
+        print(f"Error getting users: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )

@@ -1,13 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 from typing import Any
+from pydantic import BaseModel
 
 from ..database import get_db
 from ..deps import get_current_active_user
 from ..models.user import User
 from ..schemas.user import User as UserSchema, UserUpdate
+from ..bot.bot import connection_codes
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+# Добавляем модель для получения кода
+class TelegramConnect(BaseModel):
+    code: str
 
 @router.get("/me", response_model=UserSchema)
 def read_current_user(
@@ -27,7 +33,7 @@ def update_current_user(
     """
     Обновить данные текущего пользователя.
     """
-    # Проверяем, не занят ли email другим пользователем
+    # Проверяем, не занят ли email д��угим пользователем
     if user_in.email:
         user = db.query(User).filter(
             User.email == user_in.email,
@@ -59,3 +65,50 @@ def update_current_user(
     db.commit()
     db.refresh(current_user)
     return current_user 
+
+@router.post("/connect-telegram")
+async def connect_telegram(
+    data: TelegramConnect,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Подключение Telegram аккаунта к пользователю
+    """
+    try:
+        print(f"Attempting to connect Telegram with code: {data.code}")
+        print(f"Available codes: {connection_codes}")
+        
+        if data.code not in connection_codes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Неверный код подключения"
+            )
+        
+        # Получаем Telegram ID и конвертируем в строку
+        telegram_id = str(connection_codes[data.code])  # Конвертируем в строку
+        print(f"Found Telegram ID: {telegram_id}")
+        
+        # Проверяем существующего пользователя
+        existing_user = db.query(User).filter(User.telegram_id == telegram_id).first()
+        if existing_user and existing_user.id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Этот Telegram аккаунт уже привязан к другому пользователю"
+            )
+        
+        # Обновляем пользователя
+        current_user.telegram_id = telegram_id
+        db.commit()
+        
+        del connection_codes[data.code]
+        
+        print(f"Successfully connected Telegram for user {current_user.username}")
+        return {"status": "success", "message": "Telegram успешно подключен"}
+        
+    except Exception as e:
+        print(f"Error connecting Telegram: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        ) 

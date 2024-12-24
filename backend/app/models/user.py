@@ -13,5 +13,5 @@ class User(Base):
     is_active = Column(Boolean, default=True)
 
     # Отношения
-    sent_messages = relationship("Message", foreign_keys="[Message.sender_id]", back_populates="sender")
-    received_messages = relationship("Message", foreign_keys="[Message.recipient_id]", back_populates="recipient")
+    sent_messages = relationship("Message", foreign_keys="Message.sender_id", back_populates="sender")
+    received_messages = relationship("Message", foreign_keys="Message.recipient_id", back_populates="recipient")

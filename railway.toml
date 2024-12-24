@@ -15,4 +15,7 @@ cmds = [
 ]
 
 [phases.build]
-cmds = ["alembic upgrade head"] 
+cmds = ["DATABASE_URL=$DATABASE_URL alembic upgrade head"]
+
+[build.env]
+DATABASE_URL = "${DATABASE_URL}" 
